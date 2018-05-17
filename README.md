@@ -115,8 +115,6 @@ Nos dara una respuesta de este estilo:
 Si queremos un parametro en particular:
 
 ```
-
-```
 localhost:8080/GetParameters/Brightness
 ```
 
@@ -146,6 +144,7 @@ localhost:8080/GetParameters/ExposureAuto
 
 ##Building API Remota
 Para construir una API en modo servidor remoto.
+
 ```
 $ sudo ifconfig
 enxb827eb3cce30: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
