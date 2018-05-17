@@ -142,6 +142,44 @@ localhost:8080/GetParameters/Exposure
 localhost:8080/GetParameters/ExposureAuto
 ```
 
+##Metodos POST:
+
+```
+localhost:8080/SetParameters
+```
+
+Y el parametro que queremos modificar, con el valor que queremos darle:
+
+```
+localhost:8080/SetParameters/Brightness/20
+```
+
+Nos dara una respuesta tal que asi:
+
+```
+Success: Brightness Value assigned to 20
+```
+
+En caso de que queramos modificar a un valor fuera del rango de esos valores:
+
+```
+http://localhost:8080/SetParameters/Brightness/100
+```
+
+Nos dara una salida errónea:
+
+```
+Fatal error. Value out of range. Select value between 0 - 63
+```
+
+Para modificar el resto de parametros:
+
+```
+http://localhost:8080/SetParameters/Gamma
+http://localhost:8080/SetParameters/Gain
+http://localhost:8080/SetParameters/Exposure
+http://localhost:8080/SetParameters/ExposureAuto
+```
 ##Building API Remota
 Para construir una API en modo servidor remoto.
 
