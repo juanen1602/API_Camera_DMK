@@ -241,4 +241,53 @@ http://192.168.1.33:8080/
 Se podrán hacer el mismo tipo de peticiones.
 OJO! Solo puede haber comunicación entre cliente y servidor si ambos estan conectados a la misma Red.
 
+##Version 1.1
+La nueva version permite devolver un error en formato JSON del servidor.
+De tal manera que cuando la camara no esta conectada o esta mal conectada, nos devuelve un JSON con código de error 500 (error en el servidor):
 
+```
+{
+  "Code": 500, 
+  "Message": "CameraNotFound"
+}
+```
+
+Ademas cuando enviamos información incompleta nos devuelve un JSON con codigo 300 (redireccion).
+Esto significa que debemos completar nuestra peticion:
+
+```
+http://127.0.0.1:8080/SetParameters
+```
+
+```
+{
+  "Code": 300, 
+  "Example": {
+    "Brightness": "/SetParameters/Brightness/20", 
+    "Gain": "/SetParameters/Gain/400", 
+    "Gamma": "/SetParameters/Gamma/100"
+  }, 
+  "Info": "Select one parameter you will to modify", 
+  "Parameters": [
+    "Brightness", 
+    "Gamma", 
+    "Gain", 
+    "Exposure", 
+    "ExposureAuto"
+  ]
+}
+```
+
+```
+http://127.0.0.1:8080/SetParameters/Brightness
+```
+
+```
+{
+  "Code": 300, 
+  "MaxValue": 63, 
+  "Message": "You must choose value within range", 
+  "MinValue": 0, 
+  "Parameter": "Brightness"
+}
+```

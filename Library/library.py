@@ -35,6 +35,8 @@ class DMK:
         self.ExposureAuto = [None, None, None, None]
         self.Exposure = [None, None, None, None, None, None]
 
+        self.CameraNotFound = False
+
         self.init()
 
     def init(self):
@@ -45,6 +47,9 @@ class DMK:
 
         serial = None
         serials = self.source.get_device_serials()
+
+        if len(serials) <= 0:
+            self.CameraNotFound = True     
 
         for single_serial in serials:
 
@@ -63,6 +68,7 @@ class DMK:
 
                 if serial is None:
                     serial = self.select_camera(self.source)
+
                 if serial is not None:
                     self.source.set_property("serial", serial)
 
@@ -71,6 +77,7 @@ class DMK:
         self.cameravideo = CameraVideo()
 
         self.pipeline = Gst.parse_launch('tcambin name=src ')
+
 
     def select_camera(self, source):
 

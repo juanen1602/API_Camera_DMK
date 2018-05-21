@@ -22,3 +22,41 @@ class JSONFile:
             'Specification': self.specifications.Specification,
             'Parameters': self.parameters.Parameters
         }
+
+#Response Codes
+
+        self.CodeInformational = {
+            'Code': None,
+            'Info': None,
+            'Parameters': None,
+            'Example': None
+        }
+
+        self.CodeSuccess = {
+            'Parameter': None,
+            'Code': None,
+            'Message': None,
+            'Value': None
+        }
+
+        self.CodeRedirection = {
+            'Parameter': None,
+            'Code': None,
+            'Message': None,
+            'MinValue': None,
+            'MaxValue': None
+        }
+
+        self.CodeFailure = {
+            'Parameter': None,
+            'Code': None,
+            'Message': None,
+            'MinValue': None,
+            'MaxValue': None
+        }
+
+        self.CodeFailureServer = {
+            'Code': None,
+            'Message': None
+        }
+
