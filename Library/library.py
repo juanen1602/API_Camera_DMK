@@ -2,22 +2,32 @@ import sys
 import gi
 import time
 
+import threading
+
 gi.require_version("Tcam", "0.1")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
 gi.require_version("GstVideo", "1.0")
 gi.require_version('Gdk', '3.0')
 
-from gi.repository import Tcam, Gst, Gdk, Gtk, GObject, GstVideo
+from gi.repository import Tcam, Gst, Gdk, Gtk, GObject, GstVideo, Gio, GLib
 
 sys.path.insert(0, 'Library/CameraVideo/')
 import cameravideo
 from cameravideo import CameraVideo
 
-class DMK:
+sys.path.insert(0, 'Library/Picture/')
+import picture
+from picture import Picture 
+
+import datetime
+
+class DMK(Gtk.ApplicationWindow):
 
     def __init__(self):
 
+        super().__init__()
+        self.hb = Gtk.HeaderBar()
         self.source = None
 
         self.model = None
@@ -37,11 +47,25 @@ class DMK:
 
         self.CameraNotFound = False
 
+        self.namePicture = None
+
+        self.picture = None
+
+#        self.state = list()
+
+        self.listrequest = list()
+
+        self.currenttask = 0
+        self.n_request = 0
+        self.n_erase = 0
+
         self.init()
 
     def init(self):
+
         Gst.init(sys.argv)  # init gstreamer
         Gtk.init(sys.argv)
+        
 
         self.source = Gst.ElementFactory.make("tcambin")
 
@@ -76,9 +100,29 @@ class DMK:
 
         self.cameravideo = CameraVideo()
 
-        self.pipeline = Gst.parse_launch('tcambin name=src ')
+        self.pipeline = Gst.parse_launch('tcambin name=src ! queue max_size_buffers=2 ! videoconvert ! capsfilter caps="video/x-raw,format=BGRx" ! videoconvert ! gtksink name=sink')
 
+        sink = self.pipeline.get_by_name("sink")
+        sink.set_property("enable-last-sample", True)
+        sample = sink.get_property("last-sample")
 
+        src = self.pipeline.get_by_name("src")       
+
+        display_widget = self.pipeline.get_by_name("sink").get_property("widget")
+        self.add(display_widget)
+        self.hb.show_all()
+        display_widget.show()
+
+        if serial:
+            src.set_property("serial", serial)
+
+        src.set_state(Gst.State.READY)
+
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message::eos", self.on_eos)
+        
+        
     def select_camera(self, source):
 
         # retrieve all available serial numbers
@@ -159,6 +203,7 @@ class DMK:
                 self.Exposure[4] = category
                 self.Exposure[5] = group
 
+
     def GetParameters(self):
         self.GetInnerParameters(self.source)
 
@@ -171,6 +216,7 @@ class DMK:
 #                                              GObject.Value(int,
 #                                                            int(slider.get_value())))
         return_value = self.source.set_tcam_property(name, value)
+        print(return_value)
 
     def ShowAll(self):
         self.cameravideo.present()
@@ -178,8 +224,36 @@ class DMK:
 
         Gdk.threads_enter()
         Gtk.main()
-        Gdk.threads_leave()   
+        Gdk.threads_leave()
 
+    def TakePicture(self, name): 
+        print("TakingPicture")       
+        self.picture = Picture(name)
+
+    def on_eos(self, bus, msg):
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK,
+                                   "Video stream has ended")
+        dialog.format_secondary_text("The video capture device got disconnected")
+        dialog.run()
+        self.close()
+
+    def DoList(self, timeexposure):
+        self.n_request+=1
+        self.listrequest.append([self.n_request, timeexposure, "Ready"])
+
+    def DoTask(self):
+        while True:
+            if (self.n_request - self.n_erase > 0):
+                self.listrequest[0][2] = "Running"
+                time.sleep(self.listrequest[0][1])
+                self.TakePicture(str(self.listrequest[0][0]))
+                del self.listrequest[0]
+                self.n_erase+=1
+
+    def Task(self, texposicion):
+        time.sleep(tiempoexposicion)
+        self.state[0] = "Done"
+            
 
          
 

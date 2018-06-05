@@ -19,6 +19,10 @@ from flask import url_for
 from flask import redirect
 from flask import make_response
 
+import datetime
+
+import threading
+
 sys.path.insert(0, 'JsonFile/')
 import JsonFile
 from JsonFile import JSONFile
@@ -29,9 +33,15 @@ from library import DMK
 
 sem_change = None
 
+task_active = False
+
 dmk = DMK()
 
 jsonfile = JSONFile()
+
+def MiBucle():
+    while True:
+        miVariable = 78
 
 def SetParametersToDMK(name, value):
     global sem_change
@@ -124,8 +134,89 @@ def JSONFile():
     return jsonify(jsonFile)
 
 @app.route('/TakePicture')
-def GetDriver():
-    return render_template('80-theimagingsource-cameras.rules')
+def GetPicture():
+    now = datetime.datetime.now()
+    timeString = now.strftime("%Y-%m-%d__%H-%M-%S-%f")
+    dmk.TakePicture(timeString)
+    return timeString
+
+@app.route('/CreateTask/<int:te>')
+def CreateTask(te):  
+    global task_active
+      
+    if failureServer():
+        jsonfile.CodeFailureServer['Code'] = 500
+        jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+        jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+        jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+        response = make_response(jsonify(jsonFailureServer), 500)
+        return response
+
+    th1 = threading.Thread(target = dmk.DoList, args=(te,))
+    th1.start()
+
+    if(task_active == False):
+        task_active = True
+        th2 = threading.Thread(target = dmk.DoTask)
+        th2.start()
+
+    jsonfile.CodeSuccessResource['Code'] = 201
+    jsonfile.CodeSuccessResource['Message'] = "Task created successfully"
+    jsonfile.CodeSuccessResource['ID'] = dmk.n_request
+    jsonResource = json.dumps(jsonfile.CodeSuccessResource)
+    jsonResource = json.loads(jsonResource.replace("\'", '"'))
+
+    response = make_response(jsonify(jsonResource), 201)
+    return response
+
+@app.route('/Task')
+def Task():
+    myString = ""
+    myString += str(dmk.listrequest)
+    myString += " "
+    return myString + " " + str(dmk.n_request) + " " + str(dmk.n_erase)
+
+@app.route('/Task/<int:ID>')
+def TaskID(ID):
+    if ID <= dmk.n_erase:
+        IDlist = [ID, "Done"]
+
+        keyword = {
+            'ID': IDlist[0],
+            'Status': IDlist[1]
+        }
+
+        jsonStatus = json.dumps(keyword)
+        jsonStatus = json.loads(jsonStatus.replace("\'", '"'))
+
+        return jsonify(jsonStatus)
+    elif ID > dmk.n_erase and ID <= dmk.n_request:
+        IDlist = dmk.listrequest[ID - dmk.n_erase - 1]
+        
+        keyword = {
+            'ID': IDlist[0],
+            'Timeexposure': IDlist[1],
+            'Status': IDlist[2]
+        }
+
+        jsonStatus = json.dumps(keyword)
+        jsonStatus = json.loads(jsonStatus.replace("\'", '"'))
+
+        return jsonify(jsonStatus)
+    elif ID > dmk.n_request:
+        keyword = {
+            'message': "Task " + str(ID) + " does not exist"
+        }
+
+        jsonStatus = json.dumps(keyword)
+        jsonStatus = json.loads(jsonStatus.replace("\'", '"'))
+
+        return jsonify(jsonStatus)
+    else:
+        string = "Error"
+        return string
+ 
 
 #GET Methods
 
@@ -144,7 +235,7 @@ def GetParameters():
         GetParametersFromDMK()
     jsonParameters = json.dumps(jsonfile.parameters.Parameters)
     jsonParameters = json.loads(jsonParameters.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonParameters)
 
 @app.route('/GetParameters/Brightness', methods = ['GET'])
@@ -162,7 +253,7 @@ def GetBrillo():
         GetParametersFromDMK()
     jsonBrightness = json.dumps(jsonfile.parameters.brightness.Brightness)
     jsonBrightness = json.loads(jsonBrightness.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonBrightness)
 
 @app.route('/GetParameters/Gamma', methods = ['GET'])
@@ -180,7 +271,7 @@ def GetGamma():
         GetParametersFromDMK()
     jsonGamma = json.dumps(jsonfile.parameters.gamma.Gamma)
     jsonGamma = json.loads(jsonGamma.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonGamma)
     
 @app.route('/GetParameters/Gain', methods = ['GET'])
@@ -198,8 +289,10 @@ def GetGain():
         GetParametersFromDMK()
     jsonGain = json.dumps(jsonfile.parameters.gain.Gain)
     jsonGain = json.loads(jsonGain.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonGain)
+
+
 
 @app.route('/GetParameters/Exposure', methods = ['GET'])
 def GetExposure():
@@ -216,7 +309,7 @@ def GetExposure():
         GetParametersFromDMK()
     jsonExposure = json.dumps(jsonfile.parameters.exposure.Exposure)
     jsonExposure = json.loads(jsonExposure.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonExposure)
 
 @app.route('/GetParameters/ExposureAuto', methods = ['GET'])
@@ -234,7 +327,7 @@ def GetExposureAuto():
         GetParametersFromDMK()
     jsonExposureAuto = json.dumps(jsonfile.parameters.exposureauto.ExposureAuto)
     jsonExposureAuto = json.loads(jsonExposureAuto.replace("\'", '"'))
-    print("{}".format(sem_change))
+#    print("{}".format(sem_change))
     return jsonify(jsonExposureAuto)
 
 #POST Methods
@@ -438,6 +531,42 @@ def SetGainNum(num):
         jsonfile.CodeFailure['Message'] = "Value out of range"
         jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.gain.Values['MinValue']
         jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.gain.Values['MaxValue']
+
+        jsonFailure = json.dumps(jsonfile.CodeFailure)
+        jsonFailure = json.loads(jsonFailure.replace("\'", '"'))
+        response = make_response(jsonify(jsonFailure), 400)
+        return response
+
+@app.route('/SetParameters/Exposure/<int:num>')
+def SetExposureNum(num):
+    if failureServer():
+        jsonfile.CodeFailureServer['Code'] = 500
+        jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+        jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+        jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+        response = make_response(jsonify(jsonFailureServer), 500)
+        return response
+
+    elif True:#num > jsonfile.parameters.exposure.Values['MinValue'] and num < jsonfile.parameters.exposure.Values['MaxValue']:
+        jsonfile.parameters.exposure.Values['CurrentValue'] = num
+        SetParametersToDMK("Exposure", num)              
+
+        jsonfile.CodeSuccess['Parameter'] = 'Exposure'
+        jsonfile.CodeSuccess['Code'] = 200
+        jsonfile.CodeSuccess['Message'] = "Value successfully assigned"
+        jsonfile.CodeSuccess['Value'] = num
+
+        jsonSuccess = json.dumps(jsonfile.CodeSuccess)
+        jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+        response = make_response(jsonify(jsonSuccess), 200)
+        return response
+    else:
+        jsonfile.CodeFailure['Parameter'] = 'Exposure'
+        jsonfile.CodeFailure['Code'] = 400
+        jsonfile.CodeFailure['Message'] = "Value out of range"
+        jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.exposure.Values['MinValue']
+        jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.exposure.Values['MaxValue']
 
         jsonFailure = json.dumps(jsonfile.CodeFailure)
         jsonFailure = json.loads(jsonFailure.replace("\'", '"'))

@@ -39,6 +39,12 @@ class JSONFile:
             'Value': None
         }
 
+        self.CodeSuccessResource = {
+            'Code': None,
+            'Message': None,
+            'ID': None
+        }
+
         self.CodeRedirection = {
             'Parameter': None,
             'Code': None,
