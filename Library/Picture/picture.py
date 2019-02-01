@@ -7,11 +7,11 @@ gi.require_version("Tcam", "0.1")
 from gi.repository import Tcam
 
 gi.require_version("Gst", "1.0")
-gi.require_version("Gtk", "3.0")
+#gi.require_version("Gtk", "3.0")
 
-from gi.repository import Gtk, Gst, Gio, GObject, GLib
+from gi.repository import Gst, Gio, GObject, GLib #Gtk
 
-class Picture(Gtk.ApplicationWindow):
+class Picture():
     def __init__(self, name):
         Gst.init(sys.argv)
 
@@ -72,26 +72,27 @@ class Picture(Gtk.ApplicationWindow):
 
         sink = pipeline.get_by_name("sink")
         sink.set_property("enable-last-sample", True)
-        sample = sink.get_property("last-sample")
+#        sample = sink.get_property("last-sample")
 
         return pipeline
 
+
     def start_pipeline(self, pipeline):
-#This is where it gives me failure with GSTREAMER
         pipeline.set_state(Gst.State.PLAYING)
-#
 
         src = pipeline.get_by_name("src")
 
-        sink = pipeline.get_by_name("sink")
-        sample = sink.get_property("last-sample")
+#        sink = pipeline.get_by_name("sink")
+#        sample = sink.get_property("last-sample")
         if pipeline.get_state(10 * Gst.SECOND)[0] != Gst.StateChangeReturn.SUCCESS:
             serial = src.get_property("serial")
+            print("Error al hacer la foto")
 
         else:
             serial = src.get_property("serial")
 
         return False
+
 
     def save_image(self, pipeline, name):
         """
@@ -124,20 +125,7 @@ class Picture(Gtk.ApplicationWindow):
         pipeline.set_state(Gst.State.NULL)
         pipeline.get_state(Gst.CLOCK_TIME_NONE)
 
+
     def close(self):
         self.pipeline.set_state(Gst.State.NULL)
-        self.destroy()
 
-
-
-#def main():
-#    name = "Foto"
-#    for i in range(30):
-#        print(name + str(i+1))
-#        print(" ")
-#        picture = Picture(name + str(i+1))
-    
-
-#if __name__ == "__main__":
-
-#main()
