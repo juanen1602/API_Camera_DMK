@@ -1,31 +1,57 @@
 import sys
 import os
 
+import string
 
 class Shell:
 
-	def ShellGet(self, parameter, element):
-		res = os.popen('tcam-ctrl -p 20110147').readlines()
+	def ShellGet(self, parameter, element, serialnumber):
+#		print(serialnumber)
+		
+		command = None
+		
+		res = os.popen('tcam-ctrl -p ' + serialnumber).readlines()
 	
+#		print(res)
 		
 		if parameter == 'Brightness':
-			command = res[1]
+#			command = res[1]
+			for i in range(len(res)):
+				result = res[i].find(parameter)
+				if result == 0:
+					command = res[i]
 		
 		elif parameter == 'Gamma':
-			command = res[2]
+#			command = res[2]
+			for i in range(len(res)):
+				result = res[i].find(parameter)
+				if result == 0:
+					command = res[i]
 		
 		elif parameter == 'Gain':
-			command = res[3]
+#			command = res[3]
+			for i in range(len(res)):
+				result = res[i].find(parameter)
+				if result == 0:
+					command = res[i]
 		
 		elif parameter == 'Exposure':
-			command = res[5]
+#			command = res[5]
+			for i in range(len(res)):
+				result = res[i].find(parameter)
+				if result == 0:
+					command = res[i]
 		
-		elif parameter == 'ExposureAuto':
-			command = res[4]
+		elif parameter == 'Exposure Auto':
+#			command = res[4]
+			for i in range(len(res)):
+				result = res[i].find(parameter)
+				if result == 0:
+					command = res[i]
 			
 		else:
 			command = None
-
+					
 	
 		if element == 'MinValue':
 			i = 0
@@ -76,11 +102,17 @@ class Shell:
 				i+=1
 			i+=8
 			value = ''
+			#
+				
+			#
 			while(command[i] != ' '):
 				value += command[i]
 				i+=1
-			valuenum = int(value)
-			return valuenum
+			if parameter != 'Exposure Auto':
+				valuenum = int(value)
+				return valuenum
+			else:
+				return value	
 			
 		elif element == 'CurrentValue':
 			i = 0
@@ -98,18 +130,22 @@ class Shell:
 			while(command[i] != ' '):
 				value += command[i]
 				i+=1
-			valuenum = int(value)
-			return valuenum
-	
+			if parameter != 'Exposure Auto':
+				valuenum = int(value)
+				return valuenum
+			else:
+				return value
+				
 		else:
 			return None
 
 
-	def ShellPut(self, parameter, value):
+	def ShellPut(self, parameter, value, serialnumber):
 		command = 'tcam-ctrl -p -s "'
 		command += parameter
 		command += '='
 		command += str(value)
-		command += '" 20110147'
+		command += '" '
+		command += serialnumber
 		res = os.popen(command).readlines()
 									 

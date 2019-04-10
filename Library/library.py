@@ -39,6 +39,8 @@ class DMK(Gtk.ApplicationWindow):
 		super().__init__()
 		self.hb = Gtk.HeaderBar()
 		self.source = None
+		
+		self.serialNumber = None
 
 		self.model = None
 		self.single_serial = None
@@ -54,6 +56,10 @@ class DMK(Gtk.ApplicationWindow):
 		self.Gain = [None, None, None, None, None, None]
 		self.ExposureAuto = [None, None, None, None]
 		self.Exposure = [None, None, None, None, None, None]
+		self.Saturation = [None, None, None, None, None, None]
+		self.Hue = [None, None, None, None, None, None]
+		self.WhiteBalanceRed = [None, None, None, None, None, None]
+		self.WhiteBalanceBlue = [None, None, None, None, None, None]
 
 		self.CameraNotFound = False
 
@@ -221,7 +227,22 @@ class DMK(Gtk.ApplicationWindow):
 			else:
 				print("Please select a legal device.")
 
+		self.serialNumber = device_list[selection]
+
 		return device_list[selection]
+		
+		
+	def GetAmountParameters(self, source):	
+		property_names = source.get_tcam_property_names()
+#		print(property_names)
+		return property_names
+		
+				
+	def GetListParameters(self):
+		property_names = self.GetAmountParameters(self.source)
+#		print(property_names)
+		return property_names
+		
 
 	def GetInnerParameters(self, source):
 		property_names = source.get_tcam_property_names()
@@ -269,6 +290,38 @@ class DMK(Gtk.ApplicationWindow):
 				self.Exposure[3] = default_value
 				self.Exposure[4] = category
 				self.Exposure[5] = group
+				
+			if name == "Saturation":
+				self.Saturation[0] = value
+				self.Saturation[1] = min_value
+				self.Saturation[2] = max_value
+				self.Saturation[3] = default_value
+				self.Saturation[4] = category
+				self.Saturation[5] = group
+				
+			if name == "Hue":
+				self.Hue[0] = value
+				self.Hue[1] = min_value
+				self.Hue[2] = max_value
+				self.Hue[3] = default_value
+				self.Hue[4] = category
+				self.Hue[5] = group
+				
+			if name == "Whitebalance Red":
+				self.WhiteBalanceRed[0] = value
+				self.WhiteBalanceRed[1] = min_value
+				self.WhiteBalanceRed[2] = max_value
+				self.WhiteBalanceRed[3] = default_value
+				self.WhiteBalanceRed[4] = category
+				self.WhiteBalanceRed[5] = group
+				
+			if name == "Whitebalance Blue":
+				self.WhiteBalanceBlue[0] = value
+				self.WhiteBalanceBlue[1] = min_value
+				self.WhiteBalanceBlue[2] = max_value
+				self.WhiteBalanceBlue[3] = default_value
+				self.WhiteBalanceBlue[4] = category
+				self.WhiteBalanceBlue[5] = group			
 
 
 	def GetParameters(self):
@@ -521,10 +574,17 @@ class DMK(Gtk.ApplicationWindow):
 		state = members[0][2]
 		numberMembers = len(members)
 		
+		nameMembers = list()
+		
+		for i in range(numberMembers):
+			name = members[i][8]
+			nameMembers.append(name)
+		
 		data = list()
 		data.append(ID)
 		data.append(state)
 		data.append(numberMembers)
+		data.append(nameMembers)
 		
 		self.dataBase3.close()
 		

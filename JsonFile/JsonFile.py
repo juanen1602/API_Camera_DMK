@@ -65,4 +65,13 @@ class JSONFile:
             'Code': None,
             'Message': None
         }
+        
+        self.CodeUnavailable = {
+            'Parameter': None,
+            'Code': None,
+            'Value': None,
+            'Message': None,
+            'MinValue': None,
+            'MaxValue': None
+        }
 

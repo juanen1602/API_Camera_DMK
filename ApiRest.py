@@ -49,6 +49,10 @@ sys.path.insert(0, 'Shell/')
 import ShellCommands
 from ShellCommands import Shell
 
+sys.path.insert(0, 'ZIP/')
+import dwlZip
+from dwlZip import Zip
+
 sem_change = None
 
 task_active = False
@@ -58,6 +62,8 @@ dmk = DMK()
 jsonfile = JSONFile()
 
 shell = Shell()
+
+fileZip = Zip()
 
 texp = None
 tout = 10
@@ -80,32 +86,25 @@ def SetParametersToDMK(name, value):
 
 
 def SetExposureAutotoFalse():
-	res = os.popen('tcam-ctrl -p -s "Exposure Auto=false" 20110147').readlines()  
+	res = os.popen('tcam-ctrl -p -s "Exposure Auto=false" ' + str(dmk.serialNumber)).readlines()
+	
+	
+def SetWhiteBalanceAutotoFalse():
+	listParameters = dmk.GetListParameters()
+	whitebalance = False
+	for i in range(len(listParameters)):
+		if listParameters[i] == "Whitebalance Auto":
+			whitebalance = True
+			break
+	
+	if whitebalance == True:
+		res = os.popen('tcam-ctrl -p -s "Whitebalance Auto=false" ' + str(dmk.serialNumber)).readlines()	  
     
-    
-def GetExposureFromShell(value):
-	res = os.popen('tcam-ctrl -p 20110147').readlines()
-	valstring = ""
-	valint = None
-
-	if value == 'DefaultAuto':
-		if res[4][55] == 'f':
-			valstring = False
-		elif res[4][55] == 't':
-			valstring = True
-		return valstring
-	elif value == 'CurrentAuto':
-		if res[4][67] == 'f':
-			valstring = False
-		elif res[4][67] == 't':
-			valstring = True
-		return valstring
-			
-	return valint
-
 	
 def GetParametersFromDMK():
 	global sem_change
+	
+#	print(dmk.serialNumber)
 
 	dmk.GetParameters()
 
@@ -115,7 +114,7 @@ def GetParametersFromDMK():
 	jsonfile.parameters.brightness.Values['DefaultValue'] = dmk.Brightness[3]
 	jsonfile.parameters.brightness.Brightness['Category'] = dmk.Brightness[4]
 	jsonfile.parameters.brightness.Brightness['Group'] = dmk.Brightness[5]
-  
+
 	jsonfile.parameters.gamma.Values['CurrentValue'] = dmk.Gamma[0]
 	jsonfile.parameters.gamma.Values['MinValue'] = dmk.Gamma[1]
 	jsonfile.parameters.gamma.Values['MaxValue'] = dmk.Gamma[2]
@@ -129,24 +128,53 @@ def GetParametersFromDMK():
 	jsonfile.parameters.gain.Values['DefaultValue'] = dmk.Gain[3]
 	jsonfile.parameters.gain.Gain['Category'] = dmk.Gain[4]
 	jsonfile.parameters.gain.Gain['Group'] = dmk.Gain[5]
-
+	
 #    jsonfile.parameters.exposure.Values['CurrentValue'] = dmk.Exposure[0]
-	jsonfile.parameters.exposure.Values['CurrentValue'] = shell.ShellGet('Exposure','CurrentValue')
+	jsonfile.parameters.exposure.Values['CurrentValue'] = shell.ShellGet('Exposure','CurrentValue', dmk.serialNumber)
 #    jsonfile.parameters.exposure.Values['MinValue'] = dmk.Exposure[1]
-	jsonfile.parameters.exposure.Values['MinValue'] = shell.ShellGet('Exposure','MinValue')
+	jsonfile.parameters.exposure.Values['MinValue'] = shell.ShellGet('Exposure','MinValue', dmk.serialNumber)
 #    jsonfile.parameters.exposure.Values['MaxValue'] = dmk.Exposure[2]
-	jsonfile.parameters.exposure.Values['MaxValue'] = shell.ShellGet('Exposure','MaxValue')
+	jsonfile.parameters.exposure.Values['MaxValue'] = shell.ShellGet('Exposure','MaxValue', dmk.serialNumber)
 #    jsonfile.parameters.exposure.Values['DefaultValue'] = dmk.Exposure[3]
-	jsonfile.parameters.exposure.Values['DefaultValue'] = shell.ShellGet('Exposure','DefaultValue')
+	jsonfile.parameters.exposure.Values['DefaultValue'] = shell.ShellGet('Exposure','DefaultValue', dmk.serialNumber)
 	jsonfile.parameters.exposure.Exposure['Category'] = dmk.Exposure[4]
 	jsonfile.parameters.exposure.Exposure['Group'] = dmk.Exposure[5]
 
 #    jsonfile.parameters.exposureauto.Values['CurrentValue'] = dmk.ExposureAuto[0]
-	jsonfile.parameters.exposureauto.Values['CurrentValue'] = GetExposureFromShell('CurrentAuto')
+#	jsonfile.parameters.exposureauto.Values['CurrentValue'] = GetExposureFromShell('CurrentAuto')
+	jsonfile.parameters.exposureauto.Values['CurrentValue'] = shell.ShellGet('Exposure Auto','CurrentValue', dmk.serialNumber)
 #    jsonfile.parameters.exposureauto.Values['DefaultValue'] = dmk.ExposureAuto[1]
-	jsonfile.parameters.exposureauto.Values['DefaultValue'] = GetExposureFromShell('DefaultAuto')
+	jsonfile.parameters.exposureauto.Values['DefaultValue'] = shell.ShellGet('Exposure Auto','DefaultValue', dmk.serialNumber)
 	jsonfile.parameters.exposureauto.ExposureAuto['Category'] = dmk.ExposureAuto[2]
 	jsonfile.parameters.exposureauto.ExposureAuto['Group'] = dmk.ExposureAuto[3] 
+
+	jsonfile.parameters.saturation.Values['CurrentValue'] = dmk.Saturation[0]
+	jsonfile.parameters.saturation.Values['MinValue'] = dmk.Saturation[1]
+	jsonfile.parameters.saturation.Values['MaxValue'] = dmk.Saturation[2]
+	jsonfile.parameters.saturation.Values['DefaultValue'] = dmk.Saturation[3]
+	jsonfile.parameters.saturation.Saturation['Category'] = dmk.Saturation[4]
+	jsonfile.parameters.saturation.Saturation['Group'] = dmk.Saturation[5]
+	
+	jsonfile.parameters.hue.Values['CurrentValue'] = dmk.Hue[0]
+	jsonfile.parameters.hue.Values['MinValue'] = dmk.Hue[1]
+	jsonfile.parameters.hue.Values['MaxValue'] = dmk.Hue[2]
+	jsonfile.parameters.hue.Values['DefaultValue'] = dmk.Hue[3]
+	jsonfile.parameters.hue.Hue['Category'] = dmk.Hue[4]
+	jsonfile.parameters.hue.Hue['Group'] = dmk.Hue[5]
+	
+	jsonfile.parameters.whitebalancered.Values['CurrentValue'] = dmk.WhiteBalanceRed[0]
+	jsonfile.parameters.whitebalancered.Values['MinValue'] = dmk.WhiteBalanceRed[1]
+	jsonfile.parameters.whitebalancered.Values['MaxValue'] = dmk.WhiteBalanceRed[2]
+	jsonfile.parameters.whitebalancered.Values['DefaultValue'] = dmk.WhiteBalanceRed[3]
+	jsonfile.parameters.whitebalancered.WhiteBalanceRed['Category'] = dmk.WhiteBalanceRed[4]
+	jsonfile.parameters.whitebalancered.WhiteBalanceRed['Group'] = dmk.WhiteBalanceRed[5]
+	
+	jsonfile.parameters.whitebalanceblue.Values['CurrentValue'] = dmk.WhiteBalanceBlue[0]
+	jsonfile.parameters.whitebalanceblue.Values['MinValue'] = dmk.WhiteBalanceBlue[1]
+	jsonfile.parameters.whitebalanceblue.Values['MaxValue'] = dmk.WhiteBalanceBlue[2]
+	jsonfile.parameters.whitebalanceblue.Values['DefaultValue'] = dmk.WhiteBalanceBlue[3]
+	jsonfile.parameters.whitebalanceblue.WhiteBalanceBlue['Category'] = dmk.WhiteBalanceBlue[4]
+	jsonfile.parameters.whitebalanceblue.WhiteBalanceBlue['Group'] = dmk.WhiteBalanceBlue[5]		
 
 	sem_change = False 
  
@@ -164,10 +192,14 @@ def init():
 	jsonfile.File['ConnectionType'] = dmk.connection_type
 
 	SetExposureAutotoFalse()
+	SetWhiteBalanceAutotoFalse()
 
+#	print("Hasta aqui todo bien")
 	sem_change = False
 
+#	print("Entro dentro del GET")
 	GetParametersFromDMK()
+#	print("Salgo fuera del get")
 	
 	th2 = threading.Thread(target = dmk.DoTask)
 	th2.start()     
@@ -323,6 +355,39 @@ def CreateTask():
 	return response
 
 
+@app.route('/CreateZip/<int:ID>', methods = ['GET'])
+def CreateZIP(ID):
+#	contentRequest = request.get_json()
+	
+	if ID <= dmk.n_request:		
+		data = dmk.Task(ID)
+#		print(data[1])
+	
+		if data[1] == 'Done':
+			fileZip.CreateFile(ID)
+			return send_file(fileZip.nameZipFile, mimetype='NewZip.Zip')
+		else:
+			return "ERROR"
+	
+	else:
+		return "CRITICAL ERROR"	
+
+
+@app.route('/GetAmountParameters', methods = ['GET'])
+def GetAParameters():
+	list_parameters = dmk.GetListParameters()
+#	print(list_parameters)
+	
+	keyword = {
+		'listParameters': list_parameters
+	}
+	
+	jsonSuccess = json.dumps(keyword)
+	jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+	
+	return jsonify(jsonSuccess)
+
+
 @app.route('/Task/<int:ID>', methods = ['GET'])
 def Task(ID):
 	if ID <= dmk.n_request:
@@ -336,7 +401,9 @@ def Task(ID):
 			'Amount': data[2],
 			'nRequest': dmk.n_request,
 			'currentTask': dmk.currenttask,
-			'Code': 200
+			'members': data[3],
+			'Code': 200,
+			'Message': "Success, ID is recorded"
 		}
 	
 		jsonStatus = json.dumps(keyword)
@@ -561,6 +628,82 @@ def GetExposureAuto():
 	jsonExposureAuto = json.loads(jsonExposureAuto.replace("\'", '"'))
 
 	return jsonify(jsonExposureAuto)
+	
+	
+@app.route('/GetParameters/Saturation', methods = ['GET'])
+def GetSaturation():
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	if sem_change == True:
+		GetParametersFromDMK()
+	jsonSaturation = json.dumps(jsonfile.parameters.saturation.Saturation)
+	jsonSaturation = json.loads(jsonSaturation.replace("\'", '"'))
+
+	return jsonify(jsonSaturation)	
+	
+	
+@app.route('/GetParameters/Hue', methods = ['GET'])
+def GetHue():
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	if sem_change == True:
+		GetParametersFromDMK()
+	jsonHue = json.dumps(jsonfile.parameters.hue.Hue)
+	jsonHue = json.loads(jsonHue.replace("\'", '"'))
+
+	return jsonify(jsonHue)
+	
+	
+@app.route('/GetParameters/WhiteBalanceRed', methods = ['GET'])
+def GetWhiteBalanceRed():
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	if sem_change == True:
+		GetParametersFromDMK()
+	jsonWhiteBalance = json.dumps(jsonfile.parameters.whitebalancered.WhiteBalanceRed)
+	jsonWhiteBalance = json.loads(jsonWhiteBalance.replace("\'", '"'))
+
+	return jsonify(jsonWhiteBalance)
+	
+	
+@app.route('/GetParameters/WhiteBalanceBlue', methods = ['GET'])
+def GetWhiteBalanceBlue():
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	if sem_change == True:
+		GetParametersFromDMK()
+	jsonWhiteBalance = json.dumps(jsonfile.parameters.whitebalanceblue.WhiteBalanceBlue)
+	jsonWhiteBalance = json.loads(jsonWhiteBalance.replace("\'", '"'))
+
+	return jsonify(jsonWhiteBalance)				
 
 #PUT Methods
 
@@ -602,6 +745,19 @@ def SetBrightnessNum():
 
 		response = make_response(jsonify(jsonFailureServer), 500)
 		return response
+	
+	elif jsonfile.parameters.brightness.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Brightness'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
 
 	elif contentRequest['Value'] >= jsonfile.parameters.brightness.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.brightness.Values['MaxValue']:
 		jsonfile.parameters.brightness.Values['CurrentValue'] = contentRequest['Value']
@@ -616,6 +772,7 @@ def SetBrightnessNum():
 		jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
 		response = make_response(jsonify(jsonSuccess), 200)
 		return response
+		
 	else:
 		jsonfile.CodeFailure['Parameter'] = 'Brightness'
 		jsonfile.CodeFailure['Code'] = 400
@@ -640,6 +797,19 @@ def SetGammaNum():
 
 		response = make_response(jsonify(jsonFailureServer), 500)
 		return response
+
+	elif jsonfile.parameters.gamma.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Gamma'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
 
 	elif contentRequest['Value'] >= jsonfile.parameters.gamma.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.gamma.Values['MaxValue']:
 		jsonfile.parameters.gamma.Values['CurrentValue'] = contentRequest['Value']
@@ -678,6 +848,19 @@ def SetGainNum():
 
 		response = make_response(jsonify(jsonFailureServer), 500)
 		return response
+
+	elif jsonfile.parameters.gain.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Gain'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
 
 	elif contentRequest['Value'] >= jsonfile.parameters.gain.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.gain.Values['MaxValue']:
 		jsonfile.parameters.gain.Values['CurrentValue'] = contentRequest['Value']
@@ -719,10 +902,23 @@ def SetExposureNum():
 		response = make_response(jsonify(jsonFailureServer), 500)
 		return response
 
+	elif jsonfile.parameters.exposure.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Exposure'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
+
 	elif contentRequest['Value'] >= jsonfile.parameters.exposure.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.exposure.Values['MaxValue']:
 		if contentRequest['Value']%100 == 0:
 			jsonfile.parameters.exposure.Values['CurrentValue'] = contentRequest['Value']
-			shell.ShellPut('Exposure',contentRequest['Value'])
+			shell.ShellPut('Exposure',contentRequest['Value'], dmk.serialNumber)
 			sem_change = True
 			print(sem_change)
 
@@ -758,6 +954,212 @@ def SetExposureNum():
 		return response
 		
 
+@app.route('/SetParameters/Saturation', methods = ['PUT'])
+def SetSaturationNum():
+	contentRequest = request.get_json()
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+		
+	elif jsonfile.parameters.saturation.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Saturation'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response		
+
+	elif contentRequest['Value'] >= jsonfile.parameters.saturation.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.saturation.Values['MaxValue']:
+		jsonfile.parameters.saturation.Values['CurrentValue'] = contentRequest['Value']
+		SetParametersToDMK("Saturation", contentRequest['Value'])
+
+		jsonfile.CodeSuccess['Parameter'] = 'Saturation'
+		jsonfile.CodeSuccess['Code'] = 200
+		jsonfile.CodeSuccess['Message'] = "Value successfully assigned"
+		jsonfile.CodeSuccess['Value'] = contentRequest['Value']
+
+		jsonSuccess = json.dumps(jsonfile.CodeSuccess)
+		jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+		response = make_response(jsonify(jsonSuccess), 200)
+		return response
+	else:
+		jsonfile.CodeFailure['Parameter'] = 'Saturation'
+		jsonfile.CodeFailure['Code'] = 400
+		jsonfile.CodeFailure['Message'] = "Value out of range"
+		jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.saturation.Values['MinValue']
+		jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.saturation.Values['MaxValue']
+
+		jsonFailure = json.dumps(jsonfile.CodeFailure)
+		jsonFailure = json.loads(jsonFailure.replace("\'", '"'))
+		response = make_response(jsonify(jsonFailure), 400)
+		return response
+		
+		
+@app.route('/SetParameters/Hue', methods = ['PUT'])
+def SetHueNum():
+	contentRequest = request.get_json()
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	elif jsonfile.parameters.hue.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'Hue'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
+
+	elif contentRequest['Value'] >= jsonfile.parameters.hue.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.hue.Values['MaxValue']:
+		jsonfile.parameters.hue.Values['CurrentValue'] = contentRequest['Value']
+		SetParametersToDMK("Hue", contentRequest['Value'])
+
+		jsonfile.CodeSuccess['Parameter'] = 'Hue'
+		jsonfile.CodeSuccess['Code'] = 200
+		jsonfile.CodeSuccess['Message'] = "Value successfully assigned"
+		jsonfile.CodeSuccess['Value'] = contentRequest['Value']
+
+		jsonSuccess = json.dumps(jsonfile.CodeSuccess)
+		jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+		response = make_response(jsonify(jsonSuccess), 200)
+		return response
+	else:
+		jsonfile.CodeFailure['Parameter'] = 'Hue'
+		jsonfile.CodeFailure['Code'] = 400
+		jsonfile.CodeFailure['Message'] = "Value out of range"
+		jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.hue.Values['MinValue']
+		jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.hue.Values['MaxValue']
+
+		jsonFailure = json.dumps(jsonfile.CodeFailure)
+		jsonFailure = json.loads(jsonFailure.replace("\'", '"'))
+		response = make_response(jsonify(jsonFailure), 400)
+		return response		
+		
+
+@app.route('/SetParameters/WhiteBalanceRed', methods = ['PUT'])
+def SetWhiteBalanceRedNum():
+	contentRequest = request.get_json()
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+
+	elif jsonfile.parameters.whitebalancered.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'WhiteBalanceRed'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response	
+
+	elif contentRequest['Value'] >= jsonfile.parameters.whitebalancered.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.whitebalancered.Values['MaxValue']:
+		jsonfile.parameters.whitebalancered.Values['CurrentValue'] = contentRequest['Value']
+		SetParametersToDMK("Whitebalance Red", contentRequest['Value'])              
+
+		jsonfile.CodeSuccess['Parameter'] = 'WhiteBalanceRed'
+		jsonfile.CodeSuccess['Code'] = 200
+		jsonfile.CodeSuccess['Message'] = "Value successfully assigned"
+		jsonfile.CodeSuccess['Value'] = contentRequest['Value']
+
+		jsonSuccess = json.dumps(jsonfile.CodeSuccess)
+		jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+		response = make_response(jsonify(jsonSuccess), 200)
+		return response
+		
+	else:
+		jsonfile.CodeFailure['Parameter'] = 'WhiteBalanceRed'
+		jsonfile.CodeFailure['Code'] = 400
+		jsonfile.CodeFailure['Message'] = "Value out of range"
+		jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.whitebalancered.Values['MinValue']
+		jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.whitebalancered.Values['MaxValue']
+
+		jsonFailure = json.dumps(jsonfile.CodeFailure)
+		jsonFailure = json.loads(jsonFailure.replace("\'", '"'))
+		response = make_response(jsonify(jsonFailure), 400)
+		return response	
+		
+		
+@app.route('/SetParameters/WhiteBalanceBlue', methods = ['PUT'])
+def SetWhiteBalanceBlueNum():
+	contentRequest = request.get_json()
+	if failureServer():
+		jsonfile.CodeFailureServer['Code'] = 500
+		jsonfile.CodeFailureServer['Message'] = "CameraNotFound"
+		jsonFailureServer = json.dumps(jsonfile.CodeFailureServer)
+		jsonFailureServer = json.loads(jsonFailureServer.replace("\'", '"'))
+
+		response = make_response(jsonify(jsonFailureServer), 500)
+		return response
+		
+	elif jsonfile.parameters.whitebalanceblue.Values['CurrentValue'] == None:
+		jsonfile.CodeUnavailable['Parameter'] = 'WhiteBalanceBlue'
+		jsonfile.CodeUnavailable['Code'] = 400
+		jsonfile.CodeUnavailable['Value'] = 0
+		jsonfile.CodeUnavailable['MinValue'] = 0
+		jsonfile.CodeUnavailable['MaxValue'] = 0
+		jsonfile.CodeUnavailable['Message'] = "Value not available for this device"
+		
+		jsonUnavailable = json.dumps(jsonfile.CodeUnavailable)
+		jsonUnavailable = json.loads(jsonUnavailable.replace("\'", '"'))
+		response = make_response(jsonify(jsonUnavailable), 400)
+		return response			
+
+	elif contentRequest['Value'] >= jsonfile.parameters.whitebalanceblue.Values['MinValue'] and contentRequest['Value'] <= jsonfile.parameters.whitebalanceblue.Values['MaxValue']:
+		jsonfile.parameters.whitebalanceblue.Values['CurrentValue'] = contentRequest['Value']
+		SetParametersToDMK("Whitebalance Blue", contentRequest['Value'])              
+
+		jsonfile.CodeSuccess['Parameter'] = 'WhiteBalanceBlue'
+		jsonfile.CodeSuccess['Code'] = 200
+		jsonfile.CodeSuccess['Message'] = "Value successfully assigned"
+		jsonfile.CodeSuccess['Value'] = contentRequest['Value']
+
+		jsonSuccess = json.dumps(jsonfile.CodeSuccess)
+		jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
+		response = make_response(jsonify(jsonSuccess), 200)
+		return response
+		
+	else:
+		jsonfile.CodeFailure['Parameter'] = 'WhiteBalanceBlue'
+		jsonfile.CodeFailure['Code'] = 400
+		jsonfile.CodeFailure['Message'] = "Value out of range"
+		jsonfile.CodeFailure['MinValue'] = jsonfile.parameters.whitebalanceblue.Values['MinValue']
+		jsonfile.CodeFailure['MaxValue'] = jsonfile.parameters.whitebalanceblue.Values['MaxValue']
+
+		jsonFailure = json.dumps(jsonfile.CodeFailure)
+		jsonFailure = json.loads(jsonFailure.replace("\'", '"'))
+		response = make_response(jsonify(jsonFailure), 400)
+		return response	
+		
+			
 #DELETE Methods
 		
 @app.route('/DeletePhoto/<string:name>', methods = ['DELETE'])
@@ -794,4 +1196,4 @@ def erasePhoto(name):
 if __name__ == "__main__":
 	init()
 
-	app.run(host='192.168.1.38', debug = True , port = 8000)
+	app.run(host='192.168.1.39', debug = True , port = 8000)
