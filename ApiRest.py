@@ -99,7 +99,35 @@ def SetWhiteBalanceAutotoFalse():
 	
 	if whitebalance == True:
 		res = os.popen('tcam-ctrl -p -s "Whitebalance Auto=false" ' + str(dmk.serialNumber)).readlines()	  
-    
+
+
+def GetDefaultValues(namefile):
+	f = open('Default/' + str(namefile), 'r')
+	dmk.textDefault = f.read()
+	f.close()
+	
+	for i in range(len(dmk.textDefault)):
+		if dmk.textDefault[i] == '\n':
+			dmk.nbrLinesDefault += 1
+					
+	print(dmk.nbrLinesDefault)
+	
+	
+			
+	
+	
+def GetDefaultValue(parameter):
+	a = 0
+	for i in range(len(dmk.textDefault)):
+		if dmk.textDefault[i] == '\n':
+			a += 1
+					
+	print(a)
+	
+	textDefaultList = list()
+	
+	
+	
 	
 def GetParametersFromDMK():
 	global sem_change
@@ -193,6 +221,10 @@ def init():
 
 	SetExposureAutotoFalse()
 	SetWhiteBalanceAutotoFalse()
+	
+	GetDefaultValues(dmk.serialNumber)
+	print(dmk.textDefault)
+#	GetDefaultValue(20)
 
 #	print("Hasta aqui todo bien")
 	sem_change = False
@@ -293,6 +325,19 @@ def VideoOutputOff2():
 	jsonSuccess = json.loads(jsonSuccess.replace("\'", '"'))
 						
 	return jsonify(jsonSuccess)		
+
+
+@app.route('/RecordVideo', methods = ['POST'])
+def RecordVideo():
+	if dmk.onstream == True and dmk.onrecord == False:
+		dmk.onrecord = True
+		return "He empezado a grabar el video"
+	elif dmk.onstream == True and dmk.onrecord == True:
+		return "Ya se está grabando el video"
+	elif dmk.onstream == False:	
+		return "La camara debe estar grabando para activar el modo video"
+	else:
+		return "INTERNAL ERROR"		
 
 
 @app.route('/TakePicture', methods = ['POST'])
@@ -706,6 +751,11 @@ def GetWhiteBalanceBlue():
 	return jsonify(jsonWhiteBalance)				
 
 #PUT Methods
+
+@app.route('/Gatherframes', methods = ['PUT'])
+def GatherFrames():
+	return "FRAMES RETURNED"
+
 
 @app.route('/SetParameters', methods = ['PUT'])
 def SetParameters():
@@ -1196,4 +1246,4 @@ def erasePhoto(name):
 if __name__ == "__main__":
 	init()
 
-	app.run(host='192.168.1.39', debug = True , port = 8000)
+	app.run(host='192.168.43.23', debug = True , port = 8000)

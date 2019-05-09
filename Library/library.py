@@ -71,6 +71,7 @@ class DMK(Gtk.ApplicationWindow):
 		
 		self.n_ips = 0
 		self.onstream = False
+		self.onrecord = False
 
 		self.listrequest = list()
 		
@@ -94,6 +95,10 @@ class DMK(Gtk.ApplicationWindow):
 		
 		self.dataBase6 = None
 		self.cursor6 = None
+		
+		self.textDefault = None
+		self.nbrLinesDefault = 0
+		self.valuesDefault = list()
 
 #		This command must be uncommented untill the API is set.
 #		Otherwise the table block the complete system.
